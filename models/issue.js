@@ -35,6 +35,13 @@ const issueSchema = new mongoose.Schema({
     type: Boolean,
     default: true,
   },
+}, {
+  toObject: {
+    transform: function (doc, ret) {
+      delete ret.__v;
+      delete ret.project_id;
+    }
+  }
 });
 
 //middleware for mongoose that will create or update Date properties
