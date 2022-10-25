@@ -27,20 +27,17 @@ module.exports = function (app) {
       ];
       let query = queryOrBodyParser(req.query, fields);
       try {
-        // console.log(query);
         const project = await Project.findOne({ name: projectName });
         if (!project) return res.send([]);
-        // console.log("Hello");
-        query.project_id = project["_id"];
-        const allIssues = await Issue.find({ query })
+        query.project_id = String(project["_id"]);
+        console.log(query);
+        const allIssues = await Issue.find(query)
           .select({ __v: 0, project_id: 0 })
           .exec();
+        res.send(allIssues);
       } catch (err) {
-        console.log(err);
         return res.send(err);
       }
-      // const allIssues = await Issue.find({ project_id: project._id });
-      res.send(allIssues);
     })
 
     .post(async function (req, res) {
