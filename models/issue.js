@@ -1,4 +1,4 @@
-const mongoose = require("mongoose");
+const mongoose = require('mongoose');
 
 const issueSchema = new mongoose.Schema({
   project_id: {
@@ -37,17 +37,11 @@ const issueSchema = new mongoose.Schema({
   },
 }, {
   toObject: {
-    transform: function (doc, ret) {
+    transform(doc, ret) {
       delete ret.__v;
       delete ret.project_id;
-    }
-  }
+    },
+  },
 });
 
-//middleware for mongoose that will create or update Date properties
-issueSchema.pre("save", (next) => {
-  this.updated_on = new Date().toISOString();
-  next();
-});
-
-module.exports = mongoose.model("issues", issueSchema);
+module.exports = mongoose.model('issues', issueSchema);
