@@ -4,21 +4,12 @@ const chai = require('chai');
 
 const { assert } = chai;
 const server = require('../server');
-const Project = require('../models/project');
-const Issue = require('../models/issue');
 
 chai.use(chaiHttp);
 
-async function cleanUpDatabase() {
-  console.log('Cleaning up database ...');
-  const project = await Project.findOne({ name: 'apitest' });
-  if (!project) return;
-  await Issue.deleteMany({ project_id: project._id });
-  await Project.deleteOne({ name: 'apitest' });
-}
-
 suite('Functional Tests', () => {
   let issueIdToDelete;
+  let createdObject;
   suite('Create an Issue', () => {
     test('Create an issue with every field', (done) => {
       chai
@@ -40,6 +31,7 @@ suite('Functional Tests', () => {
           assert.equal(res.body.created_by, 'fCC');
           assert.equal(res.body.status_text, 'Not Done');
           assert.equal(res.body.issue_text, 'FunctionalTest1');
+          createdObject = res.body;
           done();
         });
     });
@@ -84,7 +76,7 @@ suite('Functional Tests', () => {
     test('View issues on a project', (done) => {
       chai
         .request(server)
-        .get('/api/issues/test-get')
+        .get('/api/issues/apitest')
         .end((err, res) => {
           assert.equal(res.status, 200);
           assert.equal(res.body.length, 2);
@@ -94,50 +86,30 @@ suite('Functional Tests', () => {
     test('View issues on a project with one filter', (done) => {
       chai
         .request(server)
-        .get('/api/issues/test-get')
+        .get('/api/issues/apitest')
         .query({
-          issue_title: 'Hey',
+          issue_title: 'Issue1',
         })
         .end((err, res) => {
           assert.equal(res.status, 200);
           assert.equal(res.body.length, 1);
-          assert.deepEqual(res.body[0], {
-            issue_title: 'Hey',
-            issue_text: 'some text',
-            created_by: 'Landon',
-            assigned_to: '',
-            status_text: '',
-            created_on: '2022-10-25T20:58:11.101Z',
-            updated_on: '2022-10-25T20:58:11.101Z',
-            open: true,
-            _id: '63584e5d929295fbc8dbeb7f',
-          });
+          assert.deepEqual(res.body[0], createdObject);
           done();
         });
     });
     test('View issues on a project with multiple filters', (done) => {
       chai
         .request(server)
-        .get('/api/issues/test-get')
+        .get('/api/issues/apitest')
         .query({
-          issue_title: 'HOOOYY',
-          issue_text: 'some text',
-          created_by: 'NYC',
+          issue_title: 'Issue1',
+          issue_text: 'FunctionalTest1',
+          created_by: 'fCC',
         })
         .end((err, res) => {
           assert.equal(res.status, 200);
           assert.equal(res.body.length, 1);
-          assert.deepEqual(res.body[0], {
-            issue_title: 'HOOOYY',
-            issue_text: 'some text',
-            created_by: 'NYC',
-            assigned_to: 'NYC',
-            status_text: '',
-            created_on: '2022-10-25T21:00:47.230Z',
-            updated_on: '2022-10-25T21:00:47.230Z',
-            open: true,
-            _id: '63584ef157def9b013a73598',
-          });
+          assert.deepEqual(res.body[0], createdObject);
           done();
         });
     });
@@ -147,38 +119,38 @@ suite('Functional Tests', () => {
     test('Update one field on an issue', (done) => {
       chai
         .request(server)
-        .put('/api/issues/test-put')
+        .put('/api/issues/apitest')
         .send({
-          _id: '635852189a93ce00552d393a',
+          _id: createdObject._id,
           issue_title: 'different',
         })
         .end((err, res) => {
           assert.equal(res.status, 200);
           assert.equal(res.body.result, 'successfully updated');
-          assert.equal(res.body._id, '635852189a93ce00552d393a');
+          assert.equal(res.body._id, createdObject._id);
           done();
         });
     });
     test('Update multiple fields on an issue', (done) => {
       chai
         .request(server)
-        .put('/api/issues/test-put')
+        .put('/api/issues/apitest')
         .send({
-          _id: '635852189a93ce00552d393a',
+          _id: createdObject._id,
           issue_title: 'random',
           issue_text: 'random',
         })
         .end((err, res) => {
           assert.equal(res.status, 200);
           assert.equal(res.body.result, 'successfully updated');
-          assert.equal(res.body._id, '635852189a93ce00552d393a');
+          assert.equal(res.body._id, createdObject._id);
           done();
         });
     });
     test('Update an issue with missing _id', (done) => {
       chai
         .request(server)
-        .put('/api/issues/test-put')
+        .put('/api/issues/apitest')
         .send({
           issue_title: 'update',
           issue_text: 'update',
@@ -192,9 +164,9 @@ suite('Functional Tests', () => {
     test('Update an issue with no fields to update', (done) => {
       chai
         .request(server)
-        .put('/api/issues/test-put')
+        .put('/api/issues/apitest')
         .send({
-          _id: '635852189a93ce00552d393a',
+          _id: createdObject._id,
         })
         .end((err, res) => {
           assert.equal(res.status, 400);
@@ -205,7 +177,7 @@ suite('Functional Tests', () => {
     test('Update an issue with an invalid _id', (done) => {
       chai
         .request(server)
-        .put('/api/issues/test-put')
+        .put('/api/issues/apitest')
         .send({
           _id: '635852189a93ce0055invalid',
           issue_title: 'update',
@@ -259,7 +231,3 @@ suite('Functional Tests', () => {
     });
   });
 });
-
-// cleanUpDatabase()
-//   .then(() => console.log('Done.'))
-//   .catch((err) => console.log(err));
